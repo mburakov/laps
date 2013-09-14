@@ -1,27 +1,23 @@
 CC=gcc
-CFLAGS=-c -Wall -g3 -O0 -std=c11
+CFLAGS=-Wall -g3 -O0 -std=c11
 LDFLAGS=
-LIBS=x11
+LIBS=x11 xpm
 
 CFLAGS+=$(shell pkg-config --cflags $(LIBS))
 LDFLAGS+=$(shell pkg-config --libs $(LIBS))
 SOURCES=$(wildcard *.c)
-OBJECTS=$(SOURCES:.c=.o)
 RESULT=$(notdir $(CURDIR))
 COMPLETION=.clang_complete
+
+all: $(COMPLETION) $(RESULT)
 
 $(COMPLETION):
 	echo $(CFLAGS) > $(COMPLETION)
 
-all: $(COMPLETION) $(SOURCES) $(RESULT)
-
-$(RESULT): $(OBJECTS)
-	$(CC) $(LDFLAGS) $^ -o $@
-
-.c.o:
-	$(CC) $(CFLAGS) $< -o $@
+$(RESULT): $(SOURCES)
+	$(CC) $(CFLAGS) $(SOURCES) -o $(RESULT) $(LDFLAGS)
 
 clean:
-	rm *.o $(RESULT) $(COMPLETION)
+	rm $(RESULT) $(COMPLETION)
 
 .PHONY: all clean

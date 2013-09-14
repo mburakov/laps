@@ -1,9 +1,14 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#include <X11/xpm.h>
+
+#include <sys/select.h>
 
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+extern char* battery_xpm[];
 
 volatile sig_atomic_t running = 1;
 
@@ -33,8 +38,8 @@ int main(int argc, char** argv)
   //Colormap colormap = DefaultColormap(display, screen);
   Window root = DefaultRootWindow(display);
   //Visual* vis = DefaultVisual(display, screen);
-  Window dockapp = XCreateSimpleWindow(display, root, 0, 0, 128, 24, 0, 0, 0);
-  //                                                         W    H
+  Window dockapp = XCreateSimpleWindow(display, root, 0, 0, 16, 24, 0, 0, 0);
+  //                                                         W   H
 
   XWMHints wm_hints;
   wm_hints.initial_state = WithdrawnState;
@@ -43,13 +48,49 @@ int main(int argc, char** argv)
   XSetWMHints(display, dockapp, &wm_hints);
   XSetCommand(display, dockapp, argv, argc);
 
+  Pixmap battery, mask;
+  XpmAttributes attributes;
+  attributes.valuemask = XpmReturnAllocPixels | XpmReturnExtensions;
+  XpmCreatePixmapFromData(display, root, battery_xpm, &battery, &mask, &attributes);
+
+  XSetWindowBackgroundPixmap(display, dockapp, battery);
+
   XMapWindow(display, dockapp);
   XFlush(display);
 
   signal(SIGTERM, &handle_term);
   signal(SIGINT, &handle_term);
 
-  while(running);
+  while(running)
+  {
+    struct timeval timeout;
+    timeout.tv_sec = timeout.tv_usec = 0;
+
+    fd_set fds;
+    FD_ZERO(&fds);
+    FD_SET(xfd, &fds);
+    int selectret = select(xfd + 1, &fds, NULL, NULL, &timeout);
+
+    switch (selectret)
+    {
+      case -1:
+        continue;
+      case 0:
+//        XClearWindow(display, dockapp);
+//        XCopyArea(display, battery, root, DefaultGC(display, screen), 0, 0, 24, 24, 0, 0);
+//        XFlush(display);
+        timeout.tv_sec = 1;
+        timeout.tv_usec = 0;
+        break;
+      case 1:
+        if (FD_ISSET(xfd, &fds))
+        {
+          XEvent event;
+          XNextEvent(display, &event);
+        }
+
+    }
+  }
 
   XCloseDisplay(display);
   return 0;
