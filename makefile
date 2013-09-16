@@ -1,7 +1,7 @@
 CC=gcc
 CFLAGS=-Wall -g3 -O0 -std=c11
 LDFLAGS=
-LIBS=xcb
+LIBS=x11 xpm
 
 CFLAGS+=$(shell pkg-config --cflags $(LIBS))
 LDFLAGS+=$(shell pkg-config --libs $(LIBS))
