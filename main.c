@@ -76,6 +76,7 @@ int main(int argc, char** argv)
       case -1:
         continue;
       case 0:
+        XSetClipMask(display, DefaultGC(display, screen), mask);
         XCopyArea(display, battery, dockapp, DefaultGC(display, screen), 0, 0, 16, 24, 0, 0);
         XFlush(display);
         timeout.tv_sec = 1;
