@@ -1,5 +1,5 @@
 /* XPM */
-const char * battery_xpm[] = {
+static char * battery_xpm[] = {
 "16 24 5 1",
 " 	c None",
 ".	c #FFFFFF",
