@@ -104,12 +104,12 @@ int main(int argc, char** argv)
         {
           int total = read_value("/sys/class/power_supply/BAT0/charge_full");
           int current = read_value("/sys/class/power_supply/BAT0/charge_now");
-          int value = (current * 5 / total) + 1;
+          int value = (current * (sizeof(masks) / sizeof(masks[0]) - 1) / total) + 1;
           XClearWindow(display, dockapp);
           XSetClipMask(display, DefaultGC(display, screen), masks[value]);
           XCopyArea(display, battery, dockapp, DefaultGC(display, screen), 0, 0, 16, 24, 0, 0);
           XFlush(display);
-          timeout.tv_sec = 1;
+          timeout.tv_sec = 60;
           timeout.tv_usec = 0;
           break;
         }
