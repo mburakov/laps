@@ -8,13 +8,28 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-extern char* battery_xpm[];
+#include "battery.xpm"
+#include "battery-000.xbm"
+#include "battery-020.xbm"
+#include "battery-040.xbm"
+#include "battery-060.xbm"
+#include "battery-080.xbm"
+#include "battery-100.xbm"
 
 volatile sig_atomic_t running = 1;
 
 void handle_term(int signal)
 {
   running = 0;
+}
+
+int read_value(const char* path)
+{
+  char s[16];
+  FILE* f = fopen(path, "rt");
+  fgets(s, 16, f);
+  fclose(f);
+  return atoi(s);
 }
 
 int main(int argc, char** argv)
@@ -52,6 +67,16 @@ int main(int argc, char** argv)
   attributes.valuemask = XpmReturnAllocPixels | XpmReturnExtensions;
   XpmCreatePixmapFromData(display, root, battery_xpm, &battery, &mask, &attributes);
 
+  Pixmap masks[] =
+  {
+    XCreateBitmapFromData(display, root, (char*)battery_000_bits, 16, 24),
+    XCreateBitmapFromData(display, root, (char*)battery_020_bits, 16, 24),
+    XCreateBitmapFromData(display, root, (char*)battery_040_bits, 16, 24),
+    XCreateBitmapFromData(display, root, (char*)battery_060_bits, 16, 24),
+    XCreateBitmapFromData(display, root, (char*)battery_080_bits, 16, 24),
+    XCreateBitmapFromData(display, root, (char*)battery_100_bits, 16, 24)
+  };
+
   XSetWindowBackgroundPixmap(display, dockapp, ParentRelative);
 
   XSelectInput(display, dockapp, ExposureMask | StructureNotifyMask | ButtonPressMask | ButtonReleaseMask);
@@ -76,12 +101,18 @@ int main(int argc, char** argv)
       case -1:
         continue;
       case 0:
-        XSetClipMask(display, DefaultGC(display, screen), mask);
-        XCopyArea(display, battery, dockapp, DefaultGC(display, screen), 0, 0, 16, 24, 0, 0);
-        XFlush(display);
-        timeout.tv_sec = 1;
-        timeout.tv_usec = 0;
-        break;
+        {
+          int total = read_value("/sys/class/power_supply/BAT0/charge_full");
+          int current = read_value("/sys/class/power_supply/BAT0/charge_now");
+          int value = (current * 5 / total) + 1;
+          XClearWindow(display, dockapp);
+          XSetClipMask(display, DefaultGC(display, screen), masks[value]);
+          XCopyArea(display, battery, dockapp, DefaultGC(display, screen), 0, 0, 16, 24, 0, 0);
+          XFlush(display);
+          timeout.tv_sec = 1;
+          timeout.tv_usec = 0;
+          break;
+        }
       case 1:
         if (FD_ISSET(xfd, &fds))
         {
