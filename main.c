@@ -100,6 +100,16 @@ int main(int argc, char** argv)
     {
       case -1:
         continue;
+      case 1:
+        if (FD_ISSET(xfd, &fds))
+        {
+          XEvent event;
+          XNextEvent(display, &event);
+        }
+        else
+        {
+          break;
+        }
       case 0:
         {
           int total = read_value("/sys/class/power_supply/BAT0/charge_full");
@@ -112,12 +122,6 @@ int main(int argc, char** argv)
           timeout.tv_sec = 60;
           timeout.tv_usec = 0;
           break;
-        }
-      case 1:
-        if (FD_ISSET(xfd, &fds))
-        {
-          XEvent event;
-          XNextEvent(display, &event);
         }
     }
   }
