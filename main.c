@@ -37,6 +37,7 @@ int main(int argc, char** argv)
 {
   char *total_file = "/sys/class/power_supply/BAT0/charge_full";
   char *current_file = "/sys/class/power_supply/BAT0/charge_now";
+  char *bgcolor_name = NULL;
 
   for (char** it = argv; it < argv + argc; ++it)
   {
@@ -44,11 +45,14 @@ int main(int argc, char** argv)
       total_file = *(++it);
     else if (!strcmp(*it, "--current"))
       current_file = *(++it);
+    else if (!strcmp(*it, "--bgcolor"))
+      bgcolor_name = *(++it);
     else if (!strcmp(*it, "--help"))
     {
-      fprintf(stdout, "Usage: %s [--total <path>] [--current <path>] [--help]\n", argv[0]);
+      fprintf(stdout, "Usage: %s [--total <path>] [--current <path>] [--bgcolor <color>] [--help]\n", argv[0]);
       fprintf(stdout, "\t--total    Use <path> as a source for the total battery stat\n");
       fprintf(stdout, "\t--current  Use <path> as a source for the current battery stat\n");
+      fprintf(stdout, "\t--bgcolor  Use <color> (i.e. #777777) for the background\n");
       fprintf(stdout, "\t--help     Shtow this help\n\n");
       exit(0);
     }
@@ -70,9 +74,7 @@ int main(int argc, char** argv)
   }
 
   int screen = DefaultScreen(display);
-  //Colormap colormap = DefaultColormap(display, screen);
   Window root = DefaultRootWindow(display);
-  //Visual* vis = DefaultVisual(display, screen);
   Window dockapp = XCreateSimpleWindow(display, root, 0, 0, 16, 24, 0, 0, 0);
 
   XWMHints wm_hints;
@@ -97,7 +99,15 @@ int main(int argc, char** argv)
     XCreateBitmapFromData(display, root, (char*)battery_100_bits, 16, 24)
   };
 
-  XSetWindowBackgroundPixmap(display, dockapp, ParentRelative);
+  if (bgcolor_name)
+  {
+    Colormap colormap = DefaultColormap(display, screen);
+    XColor bgcolor;
+    XParseColor(display, colormap, bgcolor_name, &bgcolor);
+    XAllocColor(display, colormap, &bgcolor);
+    XSetWindowBackground(display, dockapp, bgcolor.pixel);
+  }
+  else XSetWindowBackgroundPixmap(display, dockapp, ParentRelative);
 
   XSelectInput(display, dockapp, ExposureMask | StructureNotifyMask | ButtonPressMask | ButtonReleaseMask);
   XMapWindow(display, dockapp);
