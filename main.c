@@ -44,6 +44,14 @@ int main(int argc, char** argv)
       total_file = *(++it);
     else if (!strcmp(*it, "--current"))
       current_file = *(++it);
+    else if (!strcmp(*it, "--help"))
+    {
+      fprintf(stdout, "Usage: %s [--total <path>] [--current <path>] [--help]\n", argv[0]);
+      fprintf(stdout, "\t--total    Use <path> as a source for the total battery stat\n");
+      fprintf(stdout, "\t--current  Use <path> as a source for the current battery stat\n");
+      fprintf(stdout, "\t--help     Shtow this help\n\n");
+      exit(0);
+    }
   }
 
   Display* display = XOpenDisplay(NULL);
