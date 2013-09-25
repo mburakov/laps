@@ -7,6 +7,7 @@
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "battery.xpm"
 #include "battery-000.xbm"
@@ -34,6 +35,17 @@ int read_value(const char* path)
 
 int main(int argc, char** argv)
 {
+  char *total_file = "/sys/class/power_supply/BAT0/charge_full";
+  char *current_file = "/sys/class/power_supply/BAT0/charge_now";
+
+  for (char** it = argv; it < argv + argc; ++it)
+  {
+    if (!strcmp(*it, "--total"))
+      total_file = *(++it);
+    else if (!strcmp(*it, "--current"))
+      current_file = *(++it);
+  }
+
   Display* display = XOpenDisplay(NULL);
   if (!display)
   {
@@ -112,8 +124,8 @@ int main(int argc, char** argv)
         }
       case 0:
         {
-          int total = read_value("/sys/class/power_supply/BAT0/charge_full");
-          int current = read_value("/sys/class/power_supply/BAT0/charge_now");
+          int total = read_value(total_file);
+          int current = read_value(current_file);
           int value = (current * (sizeof(masks) / sizeof(masks[0]) - 1) / total) + 1;
           XClearWindow(display, dockapp);
           XSetClipMask(display, DefaultGC(display, screen), masks[value]);
