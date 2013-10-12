@@ -1,6 +1,5 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
-#include <X11/xpm.h>
 
 #include <sys/select.h>
 
@@ -9,13 +8,20 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "battery.xpm"
-#include "battery-000.xbm"
-#include "battery-020.xbm"
-#include "battery-040.xbm"
-#include "battery-060.xbm"
-#include "battery-080.xbm"
-#include "battery-100.xbm"
+#include "battery-00.xbm"
+#include "battery-01.xbm"
+#include "battery-02.xbm"
+#include "battery-03.xbm"
+#include "battery-04.xbm"
+#include "battery-05.xbm"
+#include "battery-06.xbm"
+#include "battery-07.xbm"
+#include "battery-08.xbm"
+#include "battery-09.xbm"
+#include "battery-10.xbm"
+#include "battery-11.xbm"
+#include "battery-12.xbm"
+#include "battery-13.xbm"
 
 volatile sig_atomic_t running = 1;
 
@@ -84,19 +90,22 @@ int main(int argc, char** argv)
   XSetWMHints(display, dockapp, &wm_hints);
   XSetCommand(display, dockapp, argv, argc);
 
-  Pixmap battery, mask;
-  XpmAttributes attributes;
-  attributes.valuemask = XpmReturnAllocPixels | XpmReturnExtensions;
-  XpmCreatePixmapFromData(display, root, battery_xpm, &battery, &mask, &attributes);
-
   Pixmap masks[] =
   {
-    XCreateBitmapFromData(display, root, (char*)battery_000_bits, 16, 24),
-    XCreateBitmapFromData(display, root, (char*)battery_020_bits, 16, 24),
-    XCreateBitmapFromData(display, root, (char*)battery_040_bits, 16, 24),
-    XCreateBitmapFromData(display, root, (char*)battery_060_bits, 16, 24),
-    XCreateBitmapFromData(display, root, (char*)battery_080_bits, 16, 24),
-    XCreateBitmapFromData(display, root, (char*)battery_100_bits, 16, 24)
+    XCreateBitmapFromData(display, root, (char*)battery_00_bits, 16, 24),
+    XCreateBitmapFromData(display, root, (char*)battery_01_bits, 16, 24),
+    XCreateBitmapFromData(display, root, (char*)battery_02_bits, 16, 24),
+    XCreateBitmapFromData(display, root, (char*)battery_03_bits, 16, 24),
+    XCreateBitmapFromData(display, root, (char*)battery_04_bits, 16, 24),
+    XCreateBitmapFromData(display, root, (char*)battery_05_bits, 16, 24),
+    XCreateBitmapFromData(display, root, (char*)battery_06_bits, 16, 24),
+    XCreateBitmapFromData(display, root, (char*)battery_07_bits, 16, 24),
+    XCreateBitmapFromData(display, root, (char*)battery_08_bits, 16, 24),
+    XCreateBitmapFromData(display, root, (char*)battery_09_bits, 16, 24),
+    XCreateBitmapFromData(display, root, (char*)battery_10_bits, 16, 24),
+    XCreateBitmapFromData(display, root, (char*)battery_11_bits, 16, 24),
+    XCreateBitmapFromData(display, root, (char*)battery_12_bits, 16, 24),
+    XCreateBitmapFromData(display, root, (char*)battery_13_bits, 16, 24),
   };
 
   if (bgcolor_name)
@@ -144,10 +153,10 @@ int main(int argc, char** argv)
         {
           int total = read_value(total_file);
           int current = read_value(current_file);
-          int value = (current * (sizeof(masks) / sizeof(masks[0]) - 1) / total) + 1;
+          int value = (current * (sizeof(masks) / sizeof(masks[0])) / total) + 1;
           XClearWindow(display, dockapp);
           XSetClipMask(display, DefaultGC(display, screen), masks[value]);
-          XCopyArea(display, battery, dockapp, DefaultGC(display, screen), 0, 0, 16, 24, 0, 0);
+          XFillRectangle(display, dockapp, DefaultGC(display, screen), 0, 0, 16, 24);
           XFlush(display);
           timeout.tv_sec = 60;
           timeout.tv_usec = 0;
