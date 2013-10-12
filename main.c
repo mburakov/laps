@@ -23,6 +23,8 @@
 #include "battery-12.xbm"
 #include "battery-13.xbm"
 
+#define XCBFD(a) XCreateBitmapFromData(display, root, (char*)a, 16, 24)
+
 volatile sig_atomic_t running = 1;
 
 void handle_term(int signal)
@@ -92,20 +94,11 @@ int main(int argc, char** argv)
 
   Pixmap masks[] =
   {
-    XCreateBitmapFromData(display, root, (char*)battery_00_bits, 16, 24),
-    XCreateBitmapFromData(display, root, (char*)battery_01_bits, 16, 24),
-    XCreateBitmapFromData(display, root, (char*)battery_02_bits, 16, 24),
-    XCreateBitmapFromData(display, root, (char*)battery_03_bits, 16, 24),
-    XCreateBitmapFromData(display, root, (char*)battery_04_bits, 16, 24),
-    XCreateBitmapFromData(display, root, (char*)battery_05_bits, 16, 24),
-    XCreateBitmapFromData(display, root, (char*)battery_06_bits, 16, 24),
-    XCreateBitmapFromData(display, root, (char*)battery_07_bits, 16, 24),
-    XCreateBitmapFromData(display, root, (char*)battery_08_bits, 16, 24),
-    XCreateBitmapFromData(display, root, (char*)battery_09_bits, 16, 24),
-    XCreateBitmapFromData(display, root, (char*)battery_10_bits, 16, 24),
-    XCreateBitmapFromData(display, root, (char*)battery_11_bits, 16, 24),
-    XCreateBitmapFromData(display, root, (char*)battery_12_bits, 16, 24),
-    XCreateBitmapFromData(display, root, (char*)battery_13_bits, 16, 24),
+    XCBFD(battery_00_bits), XCBFD(battery_01_bits), XCBFD(battery_02_bits),
+    XCBFD(battery_03_bits), XCBFD(battery_04_bits), XCBFD(battery_05_bits),
+    XCBFD(battery_06_bits), XCBFD(battery_07_bits), XCBFD(battery_08_bits),
+    XCBFD(battery_09_bits), XCBFD(battery_10_bits), XCBFD(battery_11_bits),
+    XCBFD(battery_12_bits), XCBFD(battery_13_bits),
   };
 
   if (bgcolor_name)
@@ -154,10 +147,12 @@ int main(int argc, char** argv)
           int total = read_value(total_file);
           int current = read_value(current_file);
           int value = (current * (sizeof(masks) / sizeof(masks[0])) / total) + 1;
+
           XClearWindow(display, dockapp);
           XSetClipMask(display, DefaultGC(display, screen), masks[value]);
           XFillRectangle(display, dockapp, DefaultGC(display, screen), 0, 0, 16, 24);
           XFlush(display);
+
           timeout.tv_sec = 60;
           timeout.tv_usec = 0;
           break;
