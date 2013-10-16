@@ -146,7 +146,7 @@ int main(int argc, char** argv)
         {
           int total = read_value(total_file);
           int current = read_value(current_file);
-          int value = (current * (sizeof(masks) / sizeof(masks[0])) / total) + 1;
+          int value = current * (sizeof(masks) / sizeof(masks[0])) / total;
 
           XClearWindow(display, dockapp);
           XSetClipMask(display, DefaultGC(display, screen), masks[value]);
