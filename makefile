@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-Wall -g3 -O0 -std=c11
+CFLAGS=-Wall -g3 -O0 -std=c11 -D_GNU_SOURCE
 LDFLAGS=
 LIBS=x11
 

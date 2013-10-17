@@ -8,22 +8,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "battery-00.xbm"
-#include "battery-01.xbm"
-#include "battery-02.xbm"
-#include "battery-03.xbm"
-#include "battery-04.xbm"
-#include "battery-05.xbm"
-#include "battery-06.xbm"
-#include "battery-07.xbm"
-#include "battery-08.xbm"
-#include "battery-09.xbm"
-#include "battery-10.xbm"
-#include "battery-11.xbm"
-#include "battery-12.xbm"
-#include "battery-13.xbm"
+#include "resources/resources.h"
 
-#define XCBFD(a) XCreateBitmapFromData(display, root, (char*)a, 16, 24)
+#define max(a, b) (((a) > (b)) ? (a) : (b))
+#define min(a, b) (((a) < (b)) ? (a) : (b))
 
 volatile sig_atomic_t running = 1;
 
@@ -32,19 +20,28 @@ void handle_term(int signal)
   running = 0;
 }
 
-int read_value(const char* path)
+char* read_string(const char* path)
 {
-  char s[16];
-  FILE* f = fopen(path, "rt");
-  fgets(s, 16, f);
-  fclose(f);
-  return atoi(s);
+  char data[256];
+  FILE* source = fopen(path, "rt");
+  fgets(data, sizeof(data), source);
+  fclose(source);
+  return strndup(data, min(sizeof(data), strlen(data) - 1));
+}
+
+int read_int(const char* path)
+{
+  char* str = read_string(path);
+  int result = atoi(str);
+  free(str);
+  return result;
 }
 
 int main(int argc, char** argv)
 {
   char *total_file = "/sys/class/power_supply/BAT0/charge_full";
   char *current_file = "/sys/class/power_supply/BAT0/charge_now";
+  char *status_file = "/sys/class/power_supply/BAT0/status";
   char *bgcolor_name = NULL;
 
   for (char** it = argv; it < argv + argc; ++it)
@@ -53,6 +50,8 @@ int main(int argc, char** argv)
       total_file = *(++it);
     else if (!strcmp(*it, "--current"))
       current_file = *(++it);
+    else if (!strcmp(*it, "--status"))
+      status_file = *(++it);
     else if (!strcmp(*it, "--bgcolor"))
       bgcolor_name = *(++it);
     else if (!strcmp(*it, "--help"))
@@ -60,6 +59,7 @@ int main(int argc, char** argv)
       fprintf(stdout, "Usage: %s [--total <path>] [--current <path>] [--bgcolor <color>] [--help]\n", argv[0]);
       fprintf(stdout, "\t--total    Use <path> as a source for the total battery stat\n");
       fprintf(stdout, "\t--current  Use <path> as a source for the current battery stat\n");
+      fprintf(stdout, "\t--status   Use <path> as a source for the battery status\n");
       fprintf(stdout, "\t--bgcolor  Use <color> (i.e. #777777) for the background\n");
       fprintf(stdout, "\t--help     Shtow this help\n\n");
       exit(0);
@@ -92,14 +92,8 @@ int main(int argc, char** argv)
   XSetWMHints(display, dockapp, &wm_hints);
   XSetCommand(display, dockapp, argv, argc);
 
-  Pixmap masks[] =
-  {
-    XCBFD(battery_00_bits), XCBFD(battery_01_bits), XCBFD(battery_02_bits),
-    XCBFD(battery_03_bits), XCBFD(battery_04_bits), XCBFD(battery_05_bits),
-    XCBFD(battery_06_bits), XCBFD(battery_07_bits), XCBFD(battery_08_bits),
-    XCBFD(battery_09_bits), XCBFD(battery_10_bits), XCBFD(battery_11_bits),
-    XCBFD(battery_12_bits), XCBFD(battery_13_bits),
-  };
+  Pixmap battery_draining[] = battery_init(d);
+  Pixmap battery_charging[] = battery_init(c);
 
   if (bgcolor_name)
   {
@@ -117,6 +111,8 @@ int main(int argc, char** argv)
 
   signal(SIGTERM, &handle_term);
   signal(SIGINT, &handle_term);
+
+  // TODO Monitor battery stats and status change through inotify
 
   struct timeval timeout;
   timeout.tv_sec = timeout.tv_usec = 0;
@@ -144,9 +140,17 @@ int main(int argc, char** argv)
         }
       case 0:
         {
-          int total = read_value(total_file);
-          int current = read_value(current_file);
-          int value = current * (sizeof(masks) / sizeof(masks[0])) / total;
+          int total = read_int(total_file);
+          int current = read_int(current_file);
+          int value = current * (sizeof(battery_draining) / sizeof(battery_draining[0])) / total;
+
+          Pixmap* masks = NULL;
+          char* status = read_string(status_file);
+          if (!strcmp(status, "Discharging"))
+            masks = battery_draining;
+          else if (!strcmp(status, "Charging"))
+            masks = battery_charging;
+          free(status);
 
           XClearWindow(display, dockapp);
           XSetClipMask(display, DefaultGC(display, screen), masks[value]);
