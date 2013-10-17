@@ -12,6 +12,7 @@
 
 #define max(a, b) (((a) > (b)) ? (a) : (b))
 #define min(a, b) (((a) < (b)) ? (a) : (b))
+#define bounds(a, b, c) min(c, max(a, b))
 
 volatile sig_atomic_t running = 1;
 
@@ -94,6 +95,7 @@ int main(int argc, char** argv)
 
   Pixmap battery_draining[] = battery_init(d);
   Pixmap battery_charging[] = battery_init(c);
+  int bat_images = sizeof(battery_draining) / sizeof(battery_draining[0]);
 
   if (bgcolor_name)
   {
@@ -142,11 +144,14 @@ int main(int argc, char** argv)
         {
           int total = read_int(total_file);
           int current = read_int(current_file);
-          int value = current * (sizeof(battery_draining) / sizeof(battery_draining[0])) / total;
+          int value = current * bat_images / total;
+          value = bounds(value, 0, bat_images - 1);
 
           Pixmap* masks = NULL;
           char* status = read_string(status_file);
           if (!strcmp(status, "Discharging"))
+            masks = battery_draining;
+          else if (!strcmp(status, "Full"))
             masks = battery_draining;
           else if (!strcmp(status, "Charging"))
             masks = battery_charging;
