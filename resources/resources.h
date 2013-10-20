@@ -28,9 +28,6 @@
 #include "battery-12c.xbm"
 #include "battery-13c.xbm"
 
-#define img_init(id) \
-  XCreateBitmapFromData(display, root, (char*)id##_bits, id##_width, id##_height)
-
 #define battery_init(state) \
   { \
     img_init(battery_00##state), img_init(battery_01##state), img_init(battery_02##state), \

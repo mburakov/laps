@@ -9,33 +9,14 @@
 #include <string.h>
 
 #include "resources/resources.h"
-
-#define max(a, b) (((a) > (b)) ? (a) : (b))
-#define min(a, b) (((a) < (b)) ? (a) : (b))
-#define bounds(a, b, c) min(c, max(a, b))
+#include "widgets.h"
+#include "utils.h"
 
 volatile sig_atomic_t running = 1;
 
 void handle_term(int signal)
 {
   running = 0;
-}
-
-char* read_string(const char* path)
-{
-  char data[256];
-  FILE* source = fopen(path, "rt");
-  fgets(data, sizeof(data), source);
-  fclose(source);
-  return strndup(data, min(sizeof(data), strlen(data) - 1));
-}
-
-int read_int(const char* path)
-{
-  char* str = read_string(path);
-  int result = atoi(str);
-  free(str);
-  return result;
 }
 
 int main(int argc, char** argv)
@@ -62,36 +43,39 @@ int main(int argc, char** argv)
       fprintf(stdout, "\t--current  Use <path> as a source for the current battery stat\n");
       fprintf(stdout, "\t--status   Use <path> as a source for the battery status\n");
       fprintf(stdout, "\t--bgcolor  Use <color> (i.e. #777777) for the background\n");
-      fprintf(stdout, "\t--help     Shtow this help\n\n");
+      fprintf(stdout, "\t--help     Show this help\n\n");
       exit(0);
     }
   }
 
-  Display* display = XOpenDisplay(NULL);
-  if (!display)
+  struct context context;
+  context.display = XOpenDisplay(NULL);
+  if (!context.display)
   {
     fprintf(stderr, "Couldn't open X\n");
     fflush(stderr);
     exit(1);
   }
 
-  int xfd = ConnectionNumber(display);
+  int xfd = ConnectionNumber(context.display);
   if (xfd == -1) {
     fprintf(stderr, "Couldn't get X filedescriptor\n");
     fflush(stderr);
     exit(1);
   }
 
-  int screen = DefaultScreen(display);
-  Window root = DefaultRootWindow(display);
-  Window dockapp = XCreateSimpleWindow(display, root, 0, 0, 16, 24, 0, 0, 0);
+  context.screen = DefaultScreen(context.display);
+  context.root = DefaultRootWindow(context.display);
+  context.window = XCreateSimpleWindow(context.display, context.root, 0, 0, 16, 24, 0, 0, 0);
 
   XWMHints wm_hints;
   wm_hints.initial_state = WithdrawnState;
-  wm_hints.icon_window = wm_hints.window_group = dockapp;
+  wm_hints.icon_window = wm_hints.window_group = context.window;
   wm_hints.flags = StateHint | IconWindowHint;
-  XSetWMHints(display, dockapp, &wm_hints);
-  XSetCommand(display, dockapp, argv, argc);
+  XSetWMHints(context.display, context.window, &wm_hints);
+  XSetCommand(context.display, context.window, argv, argc);
+
+  context.gc = DefaultGC(context.display, context.screen);
 
   Pixmap battery_draining[] = battery_init(d);
   Pixmap battery_charging[] = battery_init(c);
@@ -99,17 +83,17 @@ int main(int argc, char** argv)
 
   if (bgcolor_name)
   {
-    Colormap colormap = DefaultColormap(display, screen);
+    Colormap colormap = DefaultColormap(context.display, context.screen);
     XColor bgcolor;
-    XParseColor(display, colormap, bgcolor_name, &bgcolor);
-    XAllocColor(display, colormap, &bgcolor);
-    XSetWindowBackground(display, dockapp, bgcolor.pixel);
+    XParseColor(context.display, colormap, bgcolor_name, &bgcolor);
+    XAllocColor(context.display, colormap, &bgcolor);
+    XSetWindowBackground(context.display, context.window, bgcolor.pixel);
   }
-  else XSetWindowBackgroundPixmap(display, dockapp, ParentRelative);
+  else XSetWindowBackgroundPixmap(context.display, context.window, ParentRelative);
 
-  XSelectInput(display, dockapp, ExposureMask | StructureNotifyMask | ButtonPressMask | ButtonReleaseMask);
-  XMapWindow(display, dockapp);
-  XFlush(display);
+  XSelectInput(context.display, context.window, ExposureMask | StructureNotifyMask | ButtonPressMask | ButtonReleaseMask);
+  XMapWindow(context.display, context.window);
+  XFlush(context.display);
 
   signal(SIGTERM, &handle_term);
   signal(SIGINT, &handle_term);
@@ -134,7 +118,7 @@ int main(int argc, char** argv)
         if (FD_ISSET(xfd, &fds))
         {
           XEvent event;
-          XNextEvent(display, &event);
+          XNextEvent(context.display, &event);
         }
         else
         {
@@ -157,10 +141,13 @@ int main(int argc, char** argv)
             masks = battery_charging;
           free(status);
 
-          XClearWindow(display, dockapp);
-          XSetClipMask(display, DefaultGC(display, screen), masks[value]);
-          XFillRectangle(display, dockapp, DefaultGC(display, screen), 0, 0, 16, 24);
-          XFlush(display);
+          XClearWindow(context.display, context.window);
+
+          XSetClipOrigin(context.display, context.gc, 0, 0);
+          XSetClipMask(context.display, context.gc, masks[value]);
+          XFillRectangle(context.display, context.window, context.gc, 0, 0, 16, 24);
+
+          XFlush(context.display);
 
           timeout.tv_sec = 60;
           timeout.tv_usec = 0;
@@ -169,6 +156,6 @@ int main(int argc, char** argv)
     }
   }
 
-  XCloseDisplay(display);
+  XCloseDisplay(context.display);
   return 0;
 }
