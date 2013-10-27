@@ -34,6 +34,16 @@ void add_widget(struct widget_desc* description)
   }
 }
 
+int measure_widgets()
+{
+  int result = 0;
+  each_widget(item)
+  {
+    result += item->w;
+  }
+  return result;
+}
+
 char** cmdline_widgets(int brief)
 {
   int args_count = 0;

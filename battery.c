@@ -43,7 +43,7 @@ char *total_file = "/sys/class/power_supply/BAT0/charge_full";
 char *current_file = "/sys/class/power_supply/BAT0/charge_now";
 char *status_file = "/sys/class/power_supply/BAT0/status";
 
-void on_init(struct context* context, int argc, struct kv_pair* argv)
+static void on_init(struct context* context, int argc, struct kv_pair* argv)
 {
   battery_draining[0]  = img_init(battery_00d); battery_charging[0]  = img_init(battery_00c);
   battery_draining[1]  = img_init(battery_01d); battery_charging[1]  = img_init(battery_01c);
@@ -61,7 +61,7 @@ void on_init(struct context* context, int argc, struct kv_pair* argv)
   battery_draining[13] = img_init(battery_13d); battery_charging[13] = img_init(battery_13c);
 }
 
-Pixmap on_refresh()
+static Pixmap on_refresh()
 {
   int total = read_int(total_file);
   int current = read_int(current_file);
@@ -83,26 +83,26 @@ Pixmap on_refresh()
   return masks[value];
 }
 
-void on_activate()
+static void on_activate()
 {
 }
 
-void on_del(struct context* context)
+static void on_del(struct context* context)
 {
 }
 
 /////////////////// Initialization code ///////////////////
 
-void init() __attribute__ ((constructor));
+static void init() __attribute__ ((constructor));
 
-char* short_args[] = { "--total", "--current", "--status" };
-char* long_args[] = {
+static char* short_args[] = { "--total", "--current", "--status" };
+static char* long_args[] = {
   "--total    Use specified file as a source for the total battery stat",
   "--current  Use specified file as a source for the current battery stat",
   "--status   Use specified file as a source for the battery status"
 };
 
-struct widget_desc description =
+static struct widget_desc description =
 {
   3,
   short_args,
@@ -113,7 +113,7 @@ struct widget_desc description =
   &on_del
 };
 
-void init()
+static void init()
 {
   add_widget(&description);
 }

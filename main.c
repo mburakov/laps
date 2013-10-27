@@ -63,7 +63,7 @@ int main(int argc, char** argv)
 
   context.screen = DefaultScreen(context.display);
   context.root = DefaultRootWindow(context.display);
-  context.window = XCreateSimpleWindow(context.display, context.root, 0, 0, 16, 24, 0, 0, 0);
+  context.window = XCreateSimpleWindow(context.display, context.root, 0, 0, measure_widgets(), 24, 0, 0, 0);
 
   XWMHints wm_hints;
   wm_hints.initial_state = WithdrawnState;

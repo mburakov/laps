@@ -27,6 +27,7 @@ struct widget_desc
 };
 
 void add_widget(struct widget_desc* description);
+int measure_widgets();
 char** cmdline_widgets(int brief);
 void init_widgets(struct context* context);
 void refresh_widgets(struct context* context);
