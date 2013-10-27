@@ -1,6 +1,9 @@
 #include "utils.h"
 #include "widgets.h"
-/*
+
+#include <stdlib.h>
+#include <string.h>
+
 #include "resources/battery-00d.xbm"
 #include "resources/battery-01d.xbm"
 #include "resources/battery-02d.xbm"
@@ -30,7 +33,7 @@
 #include "resources/battery-11c.xbm"
 #include "resources/battery-12c.xbm"
 #include "resources/battery-13c.xbm"
-*/
+
 #define bat_images 14
 
 Pixmap battery_draining[bat_images];
@@ -42,7 +45,6 @@ char *status_file = "/sys/class/power_supply/BAT0/status";
 
 void on_init(struct context* context, int argc, struct kv_pair* argv)
 {
-/*
   battery_draining[0]  = img_init(battery_00d); battery_charging[0]  = img_init(battery_00c);
   battery_draining[1]  = img_init(battery_01d); battery_charging[1]  = img_init(battery_01c);
   battery_draining[2]  = img_init(battery_02d); battery_charging[2]  = img_init(battery_02c);
@@ -57,7 +59,6 @@ void on_init(struct context* context, int argc, struct kv_pair* argv)
   battery_draining[11] = img_init(battery_11d); battery_charging[11] = img_init(battery_11c);
   battery_draining[12] = img_init(battery_12d); battery_charging[12] = img_init(battery_12c);
   battery_draining[13] = img_init(battery_13d); battery_charging[13] = img_init(battery_13c);
-*/
 }
 
 Pixmap on_refresh()
@@ -75,6 +76,8 @@ Pixmap on_refresh()
     masks = battery_draining;
   else if (!strcmp(status, "Charging"))
     masks = battery_charging;
+  else if (!strcmp(status, "Unknown"))
+    masks = battery_draining;
   free(status);
 
   return masks[value];
@@ -87,6 +90,10 @@ void on_activate()
 void on_del(struct context* context)
 {
 }
+
+/////////////////// Initialization code ///////////////////
+
+void init() __attribute__ ((constructor));
 
 char* short_args[] = { "--total", "--current", "--status" };
 char* long_args[] = {
@@ -105,3 +112,8 @@ struct widget_desc description =
   &on_activate,
   &on_del
 };
+
+void init()
+{
+  add_widget(&description);
+}

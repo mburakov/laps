@@ -8,7 +8,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "resources/resources.h"
 #include "widgets.h"
 #include "utils.h"
 
@@ -19,33 +18,31 @@ void handle_term(int signal)
   running = 0;
 }
 
+void print_commandline(char** data, char* format)
+{
+  for (char** item = data; *item; ++item)
+    fprintf(stdout, format, *item);
+  free(data);
+}
+
 int main(int argc, char** argv)
 {
-  char *total_file = "/sys/class/power_supply/BAT0/charge_full";
-  char *current_file = "/sys/class/power_supply/BAT0/charge_now";
-  char *status_file = "/sys/class/power_supply/BAT0/status";
   char *bgcolor_name = NULL;
 
   for (char** it = argv; it < argv + argc; ++it)
   {
-    if (!strcmp(*it, "--total"))
-      total_file = *(++it);
-    else if (!strcmp(*it, "--current"))
-      current_file = *(++it);
-    else if (!strcmp(*it, "--status"))
-      status_file = *(++it);
-    else if (!strcmp(*it, "--bgcolor"))
-      bgcolor_name = *(++it);
-    else if (!strcmp(*it, "--help"))
+    if (!strcmp(*it, "--help"))
     {
-      fprintf(stdout, "Usage: %s [--total <path>] [--current <path>] [--bgcolor <color>] [--help]\n", argv[0]);
-      fprintf(stdout, "\t--total    Use <path> as a source for the total battery stat\n");
-      fprintf(stdout, "\t--current  Use <path> as a source for the current battery stat\n");
-      fprintf(stdout, "\t--status   Use <path> as a source for the battery status\n");
+      fprintf(stdout, "Usage: %s", argv[0]);
+      print_commandline(cmdline_widgets(1), " [%s <>]");
+      fprintf(stdout, " [--bgcolor <color>] [--help]\n");
+      print_commandline(cmdline_widgets(0), "\t%s\n");
       fprintf(stdout, "\t--bgcolor  Use <color> (i.e. #777777) for the background\n");
       fprintf(stdout, "\t--help     Show this help\n\n");
       exit(0);
     }
+    else if (!strcmp(*it, "--bgcolor"))
+      bgcolor_name = *(++it);
   }
 
   struct context context;
@@ -76,10 +73,7 @@ int main(int argc, char** argv)
   XSetCommand(context.display, context.window, argv, argc);
 
   context.gc = DefaultGC(context.display, context.screen);
-
-  Pixmap battery_draining[] = battery_init(d);
-  Pixmap battery_charging[] = battery_init(c);
-  int bat_images = sizeof(battery_draining) / sizeof(battery_draining[0]);
+  init_widgets(&context);
 
   if (bgcolor_name)
   {
@@ -126,27 +120,8 @@ int main(int argc, char** argv)
         }
       case 0:
         {
-          int total = read_int(total_file);
-          int current = read_int(current_file);
-          int value = current * bat_images / total;
-          value = bounds(value, 0, bat_images - 1);
-
-          Pixmap* masks = NULL;
-          char* status = read_string(status_file);
-          if (!strcmp(status, "Discharging"))
-            masks = battery_draining;
-          else if (!strcmp(status, "Full"))
-            masks = battery_draining;
-          else if (!strcmp(status, "Charging"))
-            masks = battery_charging;
-          free(status);
-
           XClearWindow(context.display, context.window);
-
-          XSetClipOrigin(context.display, context.gc, 0, 0);
-          XSetClipMask(context.display, context.gc, masks[value]);
-          XFillRectangle(context.display, context.window, context.gc, 0, 0, 16, 24);
-
+          refresh_widgets(&context);
           XFlush(context.display);
 
           timeout.tv_sec = 60;

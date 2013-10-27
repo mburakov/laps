@@ -13,6 +13,9 @@ struct widget
 
 struct widget* widgets_list = NULL;
 
+#define each_widget(i_name) \
+  for (struct widget* i_name = widgets_list; i_name != NULL; i_name = i_name->next)
+
 void add_widget(struct widget_desc* description)
 {
   if (!widgets_list)
@@ -31,6 +34,28 @@ void add_widget(struct widget_desc* description)
   }
 }
 
+char** cmdline_widgets(int brief)
+{
+  int args_count = 0;
+  each_widget(item)
+  {
+    args_count += item->description->args_count;
+  }
+
+  char** result = (char**)malloc(sizeof(char*) * (args_count + 1));
+  char** ptr = result;
+
+  each_widget(item)
+  {
+    char** source = brief ? item->description->args_short : item->description->args_long;
+    memcpy(ptr, source, item->description->args_count * sizeof(char*));
+    ptr += item->description->args_count;
+  }
+
+  ptr = NULL;
+  return result;
+}
+
 void init_widgets(struct context* context)
 {
   struct widget* item = widgets_list;
@@ -38,7 +63,18 @@ void init_widgets(struct context* context)
     item->description->on_init(context, 0, NULL);
 }
 
-void clear_widgets(struct context* context)
+void refresh_widgets(struct context* context)
+{
+  struct widget* item = widgets_list;
+  for (; item; item = item->next)
+  {
+    XSetClipOrigin(context->display, context->gc, item->x, item->y);
+    XSetClipMask(context->display, context->gc, item->description->on_refresh());
+    XFillRectangle(context->display, context->window, context->gc, item->x, item->y, item->w, item->h);
+  }
+}
+
+void del_widgets(struct context* context)
 {
   struct widget* item = widgets_list;
   while (item)
