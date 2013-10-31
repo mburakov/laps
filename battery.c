@@ -3,6 +3,8 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
 #include "resources/battery-00d.xbm"
 #include "resources/battery-01d.xbm"
@@ -39,12 +41,23 @@
 Pixmap battery_draining[bat_images];
 Pixmap battery_charging[bat_images];
 
+static char* short_args[];
+
 char *total_file = "/sys/class/power_supply/BAT0/charge_full";
 char *current_file = "/sys/class/power_supply/BAT0/charge_now";
 char *status_file = "/sys/class/power_supply/BAT0/status";
+char *action = NULL;
 
-static void on_init(struct context* context, int argc, struct kv_pair* argv)
+static void on_init(struct context* context, int argc, struct kv_pair* args)
 {
+  arg_switch()
+  {
+    arg_case(short_args[0], total_file);
+    arg_case(short_args[1], current_file);
+    arg_case(short_args[2], status_file);
+    arg_case(short_args[3], action);
+  }
+
   battery_draining[0]  = img_init(battery_00d); battery_charging[0]  = img_init(battery_00c);
   battery_draining[1]  = img_init(battery_01d); battery_charging[1]  = img_init(battery_01c);
   battery_draining[2]  = img_init(battery_02d); battery_charging[2]  = img_init(battery_02c);
@@ -85,6 +98,8 @@ static Pixmap on_refresh()
 
 static void on_activate()
 {
+  if (action) detach(action, action, NULL)
+  else detach("sudo", "sudo", "st", "-e", "powertop", NULL);
 }
 
 static void on_del(struct context* context)
@@ -95,16 +110,17 @@ static void on_del(struct context* context)
 
 static void init() __attribute__ ((constructor));
 
-static char* short_args[] = { "--total", "--current", "--status" };
+static char* short_args[] = { "--total", "--current", "--status", "--batact" };
 static char* long_args[] = {
   "--total    Use specified file as a source for the total battery stat",
   "--current  Use specified file as a source for the current battery stat",
-  "--status   Use specified file as a source for the battery status"
+  "--status   Use specified file as a source for the battery status",
+  "--batact   Call the specified binary when widget activated"
 };
 
 static struct widget_desc description =
 {
-  3,
+  alen(short_args),
   short_args,
   long_args,
   &on_init,

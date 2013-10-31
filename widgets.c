@@ -66,21 +66,33 @@ char** cmdline_widgets(int brief)
   return result;
 }
 
-void init_widgets(struct context* context)
+void init_widgets(struct context* context, int argc, struct kv_pair* args)
 {
-  struct widget* item = widgets_list;
-  for (; item; item = item->next)
-    item->description->on_init(context, 0, NULL);
+  each_widget(item)
+  {
+    item->description->on_init(context, argc, args);
+  }
 }
 
 void refresh_widgets(struct context* context)
 {
-  struct widget* item = widgets_list;
-  for (; item; item = item->next)
+  each_widget(item)
   {
     XSetClipOrigin(context->display, context->gc, item->x, item->y);
     XSetClipMask(context->display, context->gc, item->description->on_refresh());
     XFillRectangle(context->display, context->window, context->gc, item->x, item->y, item->w, item->h);
+  }
+}
+
+void activate_widgets(int x, int y)
+{
+  each_widget(item)
+  {
+    if (item->x > x) continue;
+    if (item->x + item->w < x) continue;
+    if (item->y > y) continue;
+    if (item->y + item->h < y) continue;
+    item->description->on_activate();
   }
 }
 

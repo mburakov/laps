@@ -31,7 +31,7 @@ int main(int argc, char** argv)
 
   for (char** it = argv; it < argv + argc; ++it)
   {
-    if (!strcmp(*it, "--help"))
+    if ((argc - 1) & 0x1 || !strcmp(*it, "--help"))
     {
       fprintf(stdout, "Usage: %s", argv[0]);
       print_commandline(cmdline_widgets(1), " [%s <>]");
@@ -43,6 +43,13 @@ int main(int argc, char** argv)
     }
     else if (!strcmp(*it, "--bgcolor"))
       bgcolor_name = *(++it);
+  }
+
+  struct kv_pair args[argc >> 1];
+  for (int idx = 1; idx < argc; idx += 2)
+  {
+    args[idx >> 1].key = argv[idx + 0];
+    args[idx >> 1].value = argv[idx + 1];
   }
 
   struct context context;
@@ -73,7 +80,7 @@ int main(int argc, char** argv)
   XSetCommand(context.display, context.window, argv, argc);
 
   context.gc = DefaultGC(context.display, context.screen);
-  init_widgets(&context);
+  init_widgets(&context, argc >> 1, args);
 
   if (bgcolor_name)
   {
@@ -85,7 +92,7 @@ int main(int argc, char** argv)
   }
   else XSetWindowBackgroundPixmap(context.display, context.window, ParentRelative);
 
-  XSelectInput(context.display, context.window, ExposureMask | StructureNotifyMask | ButtonPressMask | ButtonReleaseMask);
+  XSelectInput(context.display, context.window, ExposureMask | StructureNotifyMask | ButtonPressMask);
   XMapWindow(context.display, context.window);
   XFlush(context.display);
 
@@ -109,14 +116,14 @@ int main(int argc, char** argv)
       case -1:
         continue;
       case 1:
-        if (FD_ISSET(xfd, &fds))
+        if (!FD_ISSET(xfd, &fds))
+          break;
+        while (XPending(context.display))
         {
           XEvent event;
           XNextEvent(context.display, &event);
-        }
-        else
-        {
-          break;
+          if (event.type == ButtonPress)
+            activate_widgets(event.xbutton.x, event.xbutton.y);
         }
       case 0:
         {
