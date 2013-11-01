@@ -46,7 +46,7 @@ static char* short_args[];
 char *total_file = "/sys/class/power_supply/BAT0/charge_full";
 char *current_file = "/sys/class/power_supply/BAT0/charge_now";
 char *status_file = "/sys/class/power_supply/BAT0/status";
-char *action = NULL;
+char *bat_action = NULL;
 
 static void on_init(struct context* context, int argc, struct kv_pair* args)
 {
@@ -55,7 +55,7 @@ static void on_init(struct context* context, int argc, struct kv_pair* args)
     arg_case(short_args[0], total_file);
     arg_case(short_args[1], current_file);
     arg_case(short_args[2], status_file);
-    arg_case(short_args[3], action);
+    arg_case(short_args[3], bat_action);
   }
 
   battery_draining[0]  = img_init(battery_00d); battery_charging[0]  = img_init(battery_00c);
@@ -98,7 +98,7 @@ static Pixmap on_refresh()
 
 static void on_activate()
 {
-  if (action) detach(action, action, NULL)
+  if (bat_action) detach(bat_action, bat_action, NULL)
   else detach("sudo", "sudo", "st", "-e", "powertop", NULL);
 }
 
@@ -115,7 +115,7 @@ static char* long_args[] = {
   "--total    Use specified file as a source for the total battery stat",
   "--current  Use specified file as a source for the current battery stat",
   "--status   Use specified file as a source for the battery status",
-  "--batact   Call the specified binary when widget activated"
+  "--batact   Call the specified binary when battery widget activated"
 };
 
 static struct widget_desc description =
