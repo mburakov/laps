@@ -3,26 +3,26 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <sys/wait.h>
 #include <unistd.h>
-
 
 #include "resources/volume.xbm"
 
 Pixmap volume;
 
-static char* short_args[];
-
-char *vol_action = "pavucontrol";
-
-static void on_init(struct context* context, int argc, struct kv_pair* args)
+static struct command_arg args[] =
 {
-  arg_switch()
-  {
-    arg_case(short_args[0], vol_action);
-  }
+  { "volctl", "Use the specified file as a volume control","/dev/snd/controlC0" },
+  { "volact", "Call the specified binary when volume widget activated", "talsamixer" }
+};
 
+static void on_init(struct context* context)
+{
   volume = img_init(volume);
+}
+
+static void on_notifiers(struct list_entry** notifiers)
+{
+  list_add(notifiers, arg_value(args, "volctl"));
 }
 
 static Pixmap on_refresh()
@@ -32,7 +32,7 @@ static Pixmap on_refresh()
 
 static void on_activate()
 {
-  detach(vol_action, vol_action, NULL);
+  detach(arg_value(args, "volact"));
 }
 
 static void on_del(struct context* context)
@@ -41,25 +41,18 @@ static void on_del(struct context* context)
 
 /////////////////// Initialization code ///////////////////
 
-static void init() __attribute__ ((constructor));
-
-static char* short_args[] = { "--volact" };
-static char* long_args[] = {
-  "--volact   Call the specified binary when volume widget activated"
-};
-
-static struct widget_desc description =
+static void __attribute__ ((constructor)) init()
 {
-  alen(short_args),
-  short_args,
-  long_args,
-  &on_init,
-  &on_refresh,
-  &on_activate,
-  &on_del
-};
+  static struct widget_desc description =
+  {
+    alen(args),
+    args,
+    &on_init,
+    &on_notifiers,
+    &on_refresh,
+    &on_activate,
+    &on_del
+  };
 
-static void init()
-{
   add_widget(&description);
 }

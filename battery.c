@@ -3,7 +3,6 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <sys/wait.h>
 #include <unistd.h>
 
 #include "resources/battery-00d.xbm"
@@ -41,23 +40,16 @@
 Pixmap battery_draining[bat_images];
 Pixmap battery_charging[bat_images];
 
-static char* short_args[];
-
-char *total_file = "/sys/class/power_supply/BAT0/charge_full";
-char *current_file = "/sys/class/power_supply/BAT0/charge_now";
-char *status_file = "/sys/class/power_supply/BAT0/status";
-char *bat_action = NULL;
-
-static void on_init(struct context* context, int argc, struct kv_pair* args)
+static struct command_arg args[] =
 {
-  arg_switch()
-  {
-    arg_case(short_args[0], total_file);
-    arg_case(short_args[1], current_file);
-    arg_case(short_args[2], status_file);
-    arg_case(short_args[3], bat_action);
-  }
+  { "total", "Use specified file as a source for the total battery stat", "/sys/class/power_supply/BAT0/charge_full" },
+  { "current", "Use specified file as a source for the current battery stat", "/sys/class/power_supply/BAT0/charge_now" },
+  { "status", "Use specified file as a source for the battery status", "/sys/class/power_supply/BAT0/status" },
+  { "batact", "Call the specified binary when battery widget activated", "stpowertop" }
+};
 
+static void on_init(struct context* context)
+{
   battery_draining[0]  = img_init(battery_00d); battery_charging[0]  = img_init(battery_00c);
   battery_draining[1]  = img_init(battery_01d); battery_charging[1]  = img_init(battery_01c);
   battery_draining[2]  = img_init(battery_02d); battery_charging[2]  = img_init(battery_02c);
@@ -74,15 +66,21 @@ static void on_init(struct context* context, int argc, struct kv_pair* args)
   battery_draining[13] = img_init(battery_13d); battery_charging[13] = img_init(battery_13c);
 }
 
+static void on_notifiers(struct list_entry** notifiers)
+{
+  list_add(notifiers, arg_value(args, "current"));
+  list_add(notifiers, arg_value(args, "status"));
+}
+
 static Pixmap on_refresh()
 {
-  int total = read_int(total_file);
-  int current = read_int(current_file);
+  int total = read_int(arg_value(args, "total"));
+  int current = read_int(arg_value(args, "current"));
   int value = current * bat_images / total;
   value = bounds(value, 0, bat_images - 1);
 
   Pixmap* masks = NULL;
-  char* status = read_string(status_file);
+  char* status = read_string(arg_value(args, "status"));
   if (!strcmp(status, "Discharging"))
     masks = battery_draining;
   else if (!strcmp(status, "Full"))
@@ -98,8 +96,7 @@ static Pixmap on_refresh()
 
 static void on_activate()
 {
-  if (bat_action) detach(bat_action, bat_action, NULL)
-  else detach("sudo", "sudo", "st", "-e", "powertop", NULL);
+  detach(arg_value(args, "batact"));
 }
 
 static void on_del(struct context* context)
@@ -108,28 +105,18 @@ static void on_del(struct context* context)
 
 /////////////////// Initialization code ///////////////////
 
-static void init() __attribute__ ((constructor));
-
-static char* short_args[] = { "--total", "--current", "--status", "--batact" };
-static char* long_args[] = {
-  "--total    Use specified file as a source for the total battery stat",
-  "--current  Use specified file as a source for the current battery stat",
-  "--status   Use specified file as a source for the battery status",
-  "--batact   Call the specified binary when battery widget activated"
-};
-
-static struct widget_desc description =
+static void __attribute__ ((constructor)) init()
 {
-  alen(short_args),
-  short_args,
-  long_args,
-  &on_init,
-  &on_refresh,
-  &on_activate,
-  &on_del
-};
+  static struct widget_desc description =
+  {
+    alen(args),
+    args,
+    &on_init,
+    &on_notifiers,
+    &on_refresh,
+    &on_activate,
+    &on_del
+  };
 
-static void init()
-{
   add_widget(&description);
 }

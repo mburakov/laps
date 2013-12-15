@@ -18,11 +18,34 @@ void handle_term(int signal)
   running = 0;
 }
 
-void print_commandline(char** data, char* format)
+void print_commandline(struct widget_desc* wd, void* data)
 {
-  for (char** item = data; *item; ++item)
-    fprintf(stdout, format, *item);
-  free(data);
+  static int max_len = 0;
+  for (struct command_arg* arg = wd->arguments; arg < wd->arguments + wd->args_count; ++arg)
+  {
+    if (data) *(int*)data = max_len = max(max_len, strlen(arg->name));
+    fprintf(stdout, data ? " [--%*s <>]" : "  --%-*s%s (i.e. %s)\n",
+      data ? 0 : max_len + 2, arg->name, arg->description, arg->value);
+  }
+}
+
+void update_args(struct widget_desc* wd, void* data)
+{
+  void** args = data;
+  int argc = *(int*)args[0];
+  char** argv = (char**)args[1];
+
+  for (char** end = argv + argc; argv < end; ++argv)
+  {
+    if (strncmp(argv[0], "--", 2))
+      continue;
+
+    for (struct command_arg* arg = wd->arguments; arg < wd->arguments + wd->args_count; ++arg)
+    {
+      if (!strcmp(arg->name, argv[0] + 2))
+        arg->value = argv[1];
+    }
+  }
 }
 
 int main(int argc, char** argv)
@@ -33,24 +56,21 @@ int main(int argc, char** argv)
   {
     if ((argc - 1) & 0x1 || !strcmp(*it, "--help"))
     {
+      int max_arg = 0; 
       fprintf(stdout, "Usage: %s", argv[0]);
-      print_commandline(cmdline_widgets(1), " [%s <>]");
-      fprintf(stdout, " [--bgcolor <color>] [--help]\n");
-      print_commandline(cmdline_widgets(0), "\t%s\n");
-      fprintf(stdout, "\t--bgcolor  Use <color> (i.e. #777777) for the background\n");
-      fprintf(stdout, "\t--help     Show this help\n\n");
+      for_each_widget(&print_commandline, &max_arg);
+      fprintf(stdout, " [--bgcolor <>] [--help]\n");
+      for_each_widget(&print_commandline, NULL);
+      fprintf(stdout, "  --%-*sUse specified color for the background (i.e. #bebebe)\n", max_arg + 2, "bgcolor");
+      fprintf(stdout, "  --%-*sShow this help\n\n", max_arg + 2, "help");
       exit(0);
     }
     else if (!strcmp(*it, "--bgcolor"))
       bgcolor_name = *(++it);
   }
 
-  struct kv_pair args[argc >> 1];
-  for (int idx = 1; idx < argc; idx += 2)
-  {
-    args[idx >> 1].key = argv[idx + 0];
-    args[idx >> 1].value = argv[idx + 1];
-  }
+  void* data[] = { &argc, argv };
+  for_each_widget(update_args, data);
 
   struct context context;
   context.display = XOpenDisplay(NULL);
@@ -80,7 +100,10 @@ int main(int argc, char** argv)
   XSetCommand(context.display, context.window, argv, argc);
 
   context.gc = DefaultGC(context.display, context.screen);
-  init_widgets(&context, argc >> 1, args);
+  init_widgets(&context);
+
+  struct list_entry* notifiers = NULL;
+  notifiers_widgets(&notifiers);
 
   if (bgcolor_name)
   {

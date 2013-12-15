@@ -1,5 +1,7 @@
 #include <X11/Xlib.h>
 
+struct list_entry;
+
 struct context
 {
   Display* display;
@@ -9,33 +11,34 @@ struct context
   GC gc;
 };
 
-struct kv_pair
+struct command_arg
 {
-  char* key;
+  char* name;
+  char* description;
   char* value;
 };
 
-#define arg_switch() \
-  for (struct kv_pair* it = args; it < args + argc; ++it)
-
-#define arg_case(a, b) \
-  if (!strcmp(it->key, a)) b = it->value;
+char* arg_value(struct command_arg[], const char*);
 
 struct widget_desc
 {
   int args_count;
-  char** args_short;
-  char** args_long;
-  void (*on_init)(struct context*, int, struct kv_pair*);
+  struct command_arg* arguments;
+  void (*on_init)(struct context*);
+  void (*on_get_notifiers)(struct list_entry**);
   Pixmap (*on_refresh)();
   void (*on_activate)();
   void (*on_del)(struct context*);
+  int x, y;
+  int w, h;
 };
 
+typedef void (*widget_callback)(struct widget_desc*, void*);
+
 void add_widget(struct widget_desc* description);
+void for_each_widget(widget_callback, void*);
 int measure_widgets();
-char** cmdline_widgets(int brief);
-void init_widgets(struct context* context, int argc, struct kv_pair* args);
+void init_widgets(struct context* context);
+void notifiers_widgets(struct list_entry**);
 void refresh_widgets(struct context* context);
 void activate_widgets(int x, int y);
-void del_widgets(struct context* context);

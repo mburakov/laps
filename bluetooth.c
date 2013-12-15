@@ -8,9 +8,13 @@
 
 Pixmap bluetooth;
 
-static void on_init(struct context* context, int argc, struct kv_pair* argv)
+static void on_init(struct context* context)
 {
   bluetooth = img_init(bluetooth);
+}
+
+static void on_notifiers(struct list_entry** notifiers)
+{
 }
 
 static Pixmap on_refresh()
@@ -28,23 +32,18 @@ static void on_del(struct context* context)
 
 /////////////////// Initialization code ///////////////////
 
-static void init() __attribute__ ((constructor));
-
-static char* short_args[] = { };
-static char* long_args[] = { };
-
-static struct widget_desc description =
+static void __attribute__ ((constructor)) init()
 {
-  0,
-  short_args,
-  long_args,
-  &on_init,
-  &on_refresh,
-  &on_activate,
-  &on_del
-};
+  static struct widget_desc description =
+  {
+    0,
+    NULL,
+    &on_init,
+    &on_notifiers,
+    &on_refresh,
+    &on_activate,
+    &on_del
+  };
 
-static void init()
-{
   add_widget(&description);
 }
