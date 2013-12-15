@@ -18,7 +18,7 @@ struct command_arg
   char* value;
 };
 
-char* arg_value(struct command_arg[], const char*);
+char* arg_value(struct command_arg*, int, const char*);
 
 struct widget_desc
 {

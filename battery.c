@@ -68,19 +68,19 @@ static void on_init(struct context* context)
 
 static void on_notifiers(struct list_entry** notifiers)
 {
-  list_add(notifiers, arg_value(args, "current"));
-  list_add(notifiers, arg_value(args, "status"));
+  list_add(notifiers, arg_value(args, alen(args), "current"));
+  list_add(notifiers, arg_value(args, alen(args), "status"));
 }
 
 static Pixmap on_refresh()
 {
-  int total = read_int(arg_value(args, "total"));
-  int current = read_int(arg_value(args, "current"));
+  int total = read_int(arg_value(args, alen(args), "total"));
+  int current = read_int(arg_value(args, alen(args), "current"));
   int value = current * bat_images / total;
   value = bounds(value, 0, bat_images - 1);
 
   Pixmap* masks = NULL;
-  char* status = read_string(arg_value(args, "status"));
+  char* status = read_string(arg_value(args, alen(args), "status"));
   if (!strcmp(status, "Discharging"))
     masks = battery_draining;
   else if (!strcmp(status, "Full"))
@@ -89,14 +89,13 @@ static Pixmap on_refresh()
     masks = battery_charging;
   else if (!strcmp(status, "Unknown"))
     masks = battery_draining;
-  free(status);
 
   return masks[value];
 }
 
 static void on_activate()
 {
-  detach(arg_value(args, "batact"));
+  detach(arg_value(args, alen(args), "batact"));
 }
 
 static void on_del(struct context* context)

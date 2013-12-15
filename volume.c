@@ -22,7 +22,7 @@ static void on_init(struct context* context)
 
 static void on_notifiers(struct list_entry** notifiers)
 {
-  list_add(notifiers, arg_value(args, "volctl"));
+  list_add(notifiers, arg_value(args, alen(args), "volctl"));
 }
 
 static Pixmap on_refresh()
@@ -32,7 +32,7 @@ static Pixmap on_refresh()
 
 static void on_activate()
 {
-  detach(arg_value(args, "volact"));
+  detach(arg_value(args, alen(args), "volact"));
 }
 
 static void on_del(struct context* context)

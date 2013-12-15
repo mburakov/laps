@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -11,6 +12,8 @@ char* read_string(const char* path)
   FILE* source = fopen(path, "rt");
   fgets(data, sizeof(data), source);
   fclose(source);
+  *strchrnul(data, '\r') = 0;
+  *strchrnul(data, '\n') = 0;
   return data;
 }
 
@@ -21,12 +24,17 @@ int read_int(const char* path)
 
 void detach(const char* path)
 {
-  if (vfork())
+  pid_t pid = vfork();
+  if (pid)
   {
-    if (vfork()) exit(0);
-    execlp(path, path, NULL);
+    waitpid(pid, NULL, 0);
+    return;
   }
-  wait(NULL);
+
+  if (!vfork())
+    execlp(path, path, NULL);
+
+  exit(0);
 }
 
 void list_add(struct list_entry** head, void* data)

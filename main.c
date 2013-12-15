@@ -56,7 +56,7 @@ int main(int argc, char** argv)
   {
     if ((argc - 1) & 0x1 || !strcmp(*it, "--help"))
     {
-      int max_arg = 0; 
+      int max_arg = 0;
       fprintf(stdout, "Usage: %s", argv[0]);
       for_each_widget(&print_commandline, &max_arg);
       fprintf(stdout, " [--bgcolor <>] [--help]\n");

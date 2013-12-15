@@ -6,9 +6,9 @@
 
 struct list_entry* widgets_list = NULL;
 
-char* arg_value(struct command_arg args[], const char* name)
+char* arg_value(struct command_arg* args, int size, const char* name)
 {
-  for (struct command_arg* ptr = args, *end = args + alen(args); ptr < end; ++ptr)
+  for (struct command_arg* ptr = args, *end = args + size; ptr < end; ++ptr)
   {
     if (!strcmp(ptr->name, name))
       return ptr->value;
