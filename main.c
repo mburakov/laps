@@ -1,12 +1,14 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 
+#include <sys/inotify.h>
 #include <sys/select.h>
 
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "widgets.h"
 #include "utils.h"
@@ -123,44 +125,50 @@ int main(int argc, char** argv)
   signal(SIGINT, &handle_term);
 
   // TODO Monitor battery stats and status change through inotify
+  int ifd = inotify_init1(IN_NONBLOCK);
+  if (ifd < 0)
+  {
+    fprintf(stderr, "Couldn't get inotify file descriptor\n");
+    fflush(stderr);
+    exit(1);
+  }
 
-  struct timeval timeout;
-  timeout.tv_sec = timeout.tv_usec = 0;
+  for_each(char* item, notifiers,
+  {
+    if (inotify_add_watch(ifd, item, IN_MODIFY | IN_ATTRIB) < 0)
+    {
+      fprintf(stderr, "Couldn't add watch for entry \"%s\"\n", item);
+      fflush(stderr);
+      exit(1);
+    }
+  });
 
   while(running)
   {
     fd_set fds;
     FD_ZERO(&fds);
     FD_SET(xfd, &fds);
-    int selectret = select(xfd + 1, &fds, NULL, NULL, &timeout);
+    FD_SET(ifd, &fds);
+    int selectret = select(FD_SETSIZE, &fds, NULL, NULL, NULL);
+    if (selectret < 1)
+      continue;
 
-    switch (selectret)
+    while (FD_ISSET(xfd, &fds) && XPending(context.display))
     {
-      case -1:
-        continue;
-      case 1:
-        if (!FD_ISSET(xfd, &fds))
-          break;
-        while (XPending(context.display))
-        {
-          XEvent event;
-          XNextEvent(context.display, &event);
-          if (event.type == ButtonPress)
-            activate_widgets(event.xbutton.x, event.xbutton.y);
-        }
-      case 0:
-        {
-          XClearWindow(context.display, context.window);
-          refresh_widgets(&context);
-          XFlush(context.display);
-
-          timeout.tv_sec = 60;
-          timeout.tv_usec = 0;
-          break;
-        }
+      XEvent event;
+      XNextEvent(context.display, &event);
+      if (event.type == ButtonPress)
+        activate_widgets(event.xbutton.x, event.xbutton.y);
     }
+
+    for (size_t dummy = 1; FD_ISSET(ifd, &fds) && dummy; dummy = read(ifd, &dummy, sizeof(dummy)));
+
+    XClearWindow(context.display, context.window);
+    refresh_widgets(&context);
+    XFlush(context.display);
   }
 
+  close(ifd);
   XCloseDisplay(context.display);
   return 0;
 }
