@@ -1,9 +1,11 @@
 #include "utils.h"
 #include "widgets.h"
 
+#include <linux/netlink.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
+#include <sys/socket.h>
 
 #include "resources/battery-00d.xbm"
 #include "resources/battery-01d.xbm"
@@ -48,7 +50,13 @@ static struct command_arg args[] =
   { "batact", "Call the specified binary when battery widget activated", "stpowertop" }
 };
 
-static void on_init(struct context* context)
+void udev_handler(int fd)
+{
+  // TODO: Add normal receiver here
+  for (char byte, res = 1; res > 0; res = recv(fd, &byte, 1, MSG_DONTWAIT));
+}
+
+static void on_init(struct context* context, struct list_entry** notifiers)
 {
   battery_draining[0]  = img_init(battery_00d); battery_charging[0]  = img_init(battery_00c);
   battery_draining[1]  = img_init(battery_01d); battery_charging[1]  = img_init(battery_01c);
@@ -64,12 +72,19 @@ static void on_init(struct context* context)
   battery_draining[11] = img_init(battery_11d); battery_charging[11] = img_init(battery_11c);
   battery_draining[12] = img_init(battery_12d); battery_charging[12] = img_init(battery_12c);
   battery_draining[13] = img_init(battery_13d); battery_charging[13] = img_init(battery_13c);
-}
 
-static void on_notifiers(struct list_entry** notifiers)
-{
-  list_add(notifiers, arg_value(args, alen(args), "current"));
-  list_add(notifiers, arg_value(args, alen(args), "status"));
+  struct sockaddr_nl sa = { AF_NETLINK, 0, 0, ~0 };
+  int sock = socket(PF_NETLINK, SOCK_DGRAM, NETLINK_KOBJECT_UEVENT);
+  if (sock == -1 || bind(sock, (struct sockaddr*)&sa, sizeof(struct sockaddr_nl)))
+  {
+    perror("Error initializing udev listener for battery widget");
+    exit(13);
+  }
+
+  static struct notifier udev_notifier;
+  udev_notifier.fd = sock;
+  udev_notifier.callback = &udev_handler;
+  list_add(notifiers, &udev_notifier);
 }
 
 static Pixmap on_refresh()
@@ -111,7 +126,6 @@ static void __attribute__ ((constructor)) init()
     alen(args),
     args,
     &on_init,
-    &on_notifiers,
     &on_refresh,
     &on_activate,
     &on_del

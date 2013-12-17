@@ -8,13 +8,9 @@
 
 Pixmap bluetooth;
 
-static void on_init(struct context* context)
+static void on_init(struct context* context, struct list_entry** notifiers)
 {
   bluetooth = img_init(bluetooth);
-}
-
-static void on_notifiers(struct list_entry** notifiers)
-{
 }
 
 static Pixmap on_refresh()
@@ -39,7 +35,6 @@ static void __attribute__ ((constructor)) init()
     0,
     NULL,
     &on_init,
-    &on_notifiers,
     &on_refresh,
     &on_activate,
     &on_del

@@ -15,14 +15,9 @@ static struct command_arg args[] =
   { "volact", "Call the specified binary when volume widget activated", "talsamixer" }
 };
 
-static void on_init(struct context* context)
+static void on_init(struct context* context, struct list_entry** notifiers)
 {
   volume = img_init(volume);
-}
-
-static void on_notifiers(struct list_entry** notifiers)
-{
-  list_add(notifiers, arg_value(args, alen(args), "volctl"));
 }
 
 static Pixmap on_refresh()
@@ -48,7 +43,6 @@ static void __attribute__ ((constructor)) init()
     alen(args),
     args,
     &on_init,
-    &on_notifiers,
     &on_refresh,
     &on_activate,
     &on_del

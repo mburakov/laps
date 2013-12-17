@@ -1,7 +1,6 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 
-#include <sys/inotify.h>
 #include <sys/select.h>
 
 #include <signal.h>
@@ -101,11 +100,9 @@ int main(int argc, char** argv)
   XSetWMHints(context.display, context.window, &wm_hints);
   XSetCommand(context.display, context.window, argv, argc);
 
-  context.gc = DefaultGC(context.display, context.screen);
-  init_widgets(&context);
-
   struct list_entry* notifiers = NULL;
-  notifiers_widgets(&notifiers);
+  context.gc = DefaultGC(context.display, context.screen);
+  init_widgets(&context, &notifiers);
 
   if (bgcolor_name)
   {
@@ -124,34 +121,21 @@ int main(int argc, char** argv)
   signal(SIGTERM, &handle_term);
   signal(SIGINT, &handle_term);
 
-  // TODO Monitor battery stats and status change through inotify
-  int ifd = inotify_init1(IN_NONBLOCK);
-  if (ifd < 0)
-  {
-    fprintf(stderr, "Couldn't get inotify file descriptor\n");
-    fflush(stderr);
-    exit(1);
-  }
-
-  for_each(char* item, notifiers,
-  {
-    if (inotify_add_watch(ifd, item, IN_MODIFY | IN_ATTRIB) < 0)
-    {
-      fprintf(stderr, "Couldn't add watch for entry \"%s\"\n", item);
-      fflush(stderr);
-      exit(1);
-    }
-  });
-
   while(running)
   {
     fd_set fds;
     FD_ZERO(&fds);
     FD_SET(xfd, &fds);
-    FD_SET(ifd, &fds);
+    for_each(struct notifier* item, notifiers, FD_SET(item->fd, &fds));
     int selectret = select(FD_SETSIZE, &fds, NULL, NULL, NULL);
     if (selectret < 1)
       continue;
+
+    for_each(struct notifier* item, notifiers,
+    {
+      if (FD_ISSET(item->fd, &fds))
+        item->callback(item->fd);
+    });
 
     while (FD_ISSET(xfd, &fds) && XPending(context.display))
     {
@@ -161,14 +145,11 @@ int main(int argc, char** argv)
         activate_widgets(event.xbutton.x, event.xbutton.y);
     }
 
-    for (size_t dummy = 1; FD_ISSET(ifd, &fds) && dummy; dummy = read(ifd, &dummy, sizeof(dummy)));
-
     XClearWindow(context.display, context.window);
     refresh_widgets(&context);
     XFlush(context.display);
   }
 
-  close(ifd);
   XCloseDisplay(context.display);
   return 0;
 }

@@ -28,28 +28,19 @@ void add_widget(struct widget_desc* description)
 
 void for_each_widget(widget_callback callback, void* data)
 {
-  for_each(struct widget_desc* wd, widgets_list,
-    callback(wd, data));
+  for_each(struct widget_desc* wd, widgets_list, callback(wd, data));
 }
 
 int measure_widgets()
 {
   int result = 0;
-  for_each(struct widget_desc* wd, widgets_list,
-    result += wd->w);
+  for_each(struct widget_desc* wd, widgets_list, result += wd->w);
   return result;
 }
 
-void init_widgets(struct context* context)
+void init_widgets(struct context* context, struct list_entry** notifiers)
 {
-  for_each(struct widget_desc* item, widgets_list,
-    item->on_init(context));
-}
-
-void notifiers_widgets(struct list_entry** notifiers)
-{
-  for_each(struct widget_desc* item, widgets_list,
-    item->on_get_notifiers(notifiers));
+  for_each(struct widget_desc* item, widgets_list, item->on_init(context, notifiers));
 }
 
 void refresh_widgets(struct context* context)
