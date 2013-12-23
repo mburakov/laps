@@ -1,18 +1,18 @@
 #include "utils.h"
 #include "widgets.h"
 
-#include "resources/bluetooth.xbm"
+#include "resources/wlan.xbm"
 
-Pixmap bluetooth;
+Pixmap wlan;
 
 static void on_init(struct context* context, struct list_entry** notifiers)
 {
-  bluetooth = img_init(bluetooth);
+  wlan = img_init(wlan);
 }
 
 static Pixmap on_refresh()
 {
-  return bluetooth;
+  return wlan;
 }
 
 static void on_activate()
