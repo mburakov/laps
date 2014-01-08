@@ -37,6 +37,12 @@ void detach(const char* path)
   exit(0);
 }
 
+void fatal(const char* message, const char* error)
+{
+  fprintf(stderr, error ? "%s: %s\n" : "%s\n", message, error);
+  exit(13);
+}
+
 void list_add(struct list_entry** head, void* data)
 {
   struct list_entry* tail = malloc(sizeof(struct list_entry));

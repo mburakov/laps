@@ -10,6 +10,7 @@
 char* read_string(const char* path);
 int read_int(const char* path);
 void detach(const char* path);
+void fatal(const char* message, const char* error);
 
 struct list_entry
 {
