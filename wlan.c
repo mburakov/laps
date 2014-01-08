@@ -3,6 +3,8 @@
 
 #include "resources/wlan.xbm"
 
+// libs: dbus-1
+
 Pixmap wlan;
 
 static void on_init(struct context* context, struct list_entry** notifiers)

@@ -7,6 +7,8 @@
 
 #include "resources/volume.xbm"
 
+// libs: alsa
+
 Pixmap volume;
 
 static struct command_arg args[] =
