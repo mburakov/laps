@@ -50,7 +50,7 @@ static struct command_arg args[] =
   { "batact", "Call the specified binary when battery widget activated", "stpowertop" }
 };
 
-void udev_handler(int fd)
+void udev_handler(int fd, void* data)
 {
   // TODO: Add normal receiver here
   for (char byte, res = 1; res > 0; res = recv(fd, &byte, 1, MSG_DONTWAIT));
@@ -83,6 +83,7 @@ static void on_init(struct context* context, struct list_entry** notifiers)
 
   static struct notifier udev_notifier;
   udev_notifier.fd = sock;
+  udev_notifier.data = NULL;
   udev_notifier.callback = &udev_handler;
   list_add(notifiers, &udev_notifier);
 }

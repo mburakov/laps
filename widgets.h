@@ -23,7 +23,8 @@ char* arg_value(struct command_arg*, int, const char*);
 struct notifier
 {
   int fd;
-  void (*callback)(int);
+  void* data;
+  void (*callback)(int, void*);
 };
 
 struct widget_desc

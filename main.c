@@ -134,7 +134,7 @@ int main(int argc, char** argv)
     for_each(struct notifier* item, notifiers,
     {
       if (FD_ISSET(item->fd, &fds))
-        item->callback(item->fd);
+        item->callback(item->fd, item->data);
     });
 
     while (FD_ISSET(xfd, &fds) && XPending(context.display))

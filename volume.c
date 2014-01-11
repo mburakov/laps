@@ -33,7 +33,7 @@ static struct command_arg args[] =
   { "volact", "Call the specified binary when volume widget activated", "talsamixer" }
 };
 
-void alsa_handler(int fd)
+void alsa_handler(int fd, void* data)
 {
   snd_mixer_handle_events(mixer);
 }
@@ -67,6 +67,7 @@ static void on_init(struct context* context, struct list_entry** notifiers)
   {
     struct notifier* alsa_notifier = malloc(sizeof(struct notifier));
     alsa_notifier->fd = pollfds[i].fd;
+    alsa_notifier->data = NULL;
     alsa_notifier->callback = &alsa_handler;
     list_add(notifiers, alsa_notifier);
   }
