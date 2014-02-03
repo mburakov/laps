@@ -10,6 +10,11 @@ char* read_string(const char* path)
 {
   static char data[256];
   FILE* source = fopen(path, "rt");
+  if (!source)
+  {
+    snprintf(data, sizeof(data), "File \"%s\" was not found on your system. Consider reviewing commandline options.", path);
+    fatal(data, NULL);
+  }
   fgets(data, sizeof(data), source);
   fclose(source);
   *strchrnul(data, '\r') = 0;
