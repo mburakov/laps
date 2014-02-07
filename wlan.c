@@ -23,6 +23,11 @@ Pixmap wlan[wlan_images];
 DBusConnection* dbus_connection;
 unsigned char signal_strength = 0xff;
 
+static struct command_arg args[] =
+{
+  { "wlanact", "Call the specified binary when wireless lan widget activated", "twlancfg" }
+};
+
 // TODO: This function looks ugly, do smth
 DBusHandlerResult signal_filter(DBusConnection* conn, DBusMessage* msg, void* user_data)
 {
@@ -116,6 +121,7 @@ static Pixmap on_refresh()
 
 static void on_activate()
 {
+  detach(arg_value(args, alen(args), "wlanact"));
 }
 
 static void on_del(struct context* context)
@@ -128,8 +134,8 @@ static void __attribute__ ((constructor)) init()
 {
   static struct widget_desc description =
   {
-    0,
-    NULL,
+    alen(args),
+    args,
     &on_init,
     &on_refresh,
     &on_activate,
